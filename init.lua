@@ -1,6 +1,6 @@
 -- Minetest 0.4 mod: spawn_sanitizer
 -- Bones are eventually removed from spawn.
--- 
+--
 -- See README.txt for licensing and other information.
 
 spawn_sanitizer = {}
@@ -20,7 +20,7 @@ minetest.register_abm({
 			local node=minetest.get_node(pos)
 			local nodeinventory = minetest.get_meta(pos):get_inventory()
 			if  node.param2 ~= facedir_for_bones then
-				if nodeinventory:is_empty("main") then 
+				if nodeinventory:is_empty("main") then
 					node.param2=facedir_for_bones
 					minetest.swap_node(pos, node)
 				end
@@ -31,7 +31,7 @@ minetest.register_abm({
 
 minetest.register_abm({
 	nodenames = {"bones:bones"},
-	interval = 1200,
+	interval = 3600,
 	chance = 6,
 	action = function(pos)
 		if pos.x>-80 and pos.x<80 and pos.z>-80 and pos.z<80 and pos.y>-45 then
@@ -58,16 +58,16 @@ minetest.register_abm({
 
 minetest.register_abm({
 	nodenames = {"bones:bones"},
-	interval = 3000,
+	interval = 9000,
 	chance = 8,
 	action = function(pos)
-		if pos.x>-40 and pos.x<40 and pos.z>-40 and pos.z<40 and pos.y>-45 then		
+		if pos.x>-40 and pos.x<40 and pos.z>-40 and pos.z<40 and pos.y>-45 then
 			local owner = minetest.get_meta(pos):get_string("owner")
 			if owner=="" then
 				local node=minetest.get_node(pos)
 				local nodeinventory = minetest.get_meta(pos):get_inventory()
 				if  node.param2 == facedir_for_bones then
-					if nodeinventory:is_empty("main") then 
+					if nodeinventory:is_empty("main") then
 						minetest.remove_node(pos)
 					end
 				end
@@ -76,12 +76,24 @@ minetest.register_abm({
 	end,
 })
 
+spawn_sanitizer.clean_spawnpoint = function()
+    minetest.set_node({x=0, y=4, z=0}, {name="air"});
+    minetest.set_node({x=1, y=3, z=0}, {name="air"});
+    minetest.set_node({x=1, y=4, z=0}, {name="air"});
+    minetest.set_node({x=0, y=4, z=1}, {name="air"});
+    minetest.set_node({x=0, y=5, z=2}, {name="air"});
+    minetest.set_node({x=0, y=6, z=2}, {name="air"});
+    minetest.set_node({x=0, y=6, z=3}, {name="air"});
+    minetest.set_node({x=0, y=5, z=3}, {name="air"});
+    minetest.after(75, spawn_sanitizer.clean_spawnpoint); --recursion
+end;
+
 minetest.after(75, function(dtime)
-	
+
 	if spawn_sanitizer.cleaned==true then
 		return
 	end
-	
+
 	local positions1 = minetest.find_nodes_in_area(
 		{x=-20, y=-4, z=-20},
 		{x=20, y=1, z=20},
@@ -117,15 +129,15 @@ minetest.after(75, function(dtime)
 	for _, pos in ipairs(positions5) do
 		minetest.set_node(pos, {name="default:cobble"})
 	end
-	
+
 	local positions6 = minetest.find_nodes_in_area(
-		{x=-19, y=2, z=-19},
-		{x=19, y=70, z=19},
-		{"default:cobble", "default:stone", "default:water_source", "default:lava_source"})
+		{x=-21, y=2, z=-21},
+		{x=21, y=70, z=21},
+		{"default:cobble", "default:stone", "default:water_source", "default:lava_source", "default:water_flowing"})
 	for _, pos in ipairs(positions6) do
 		minetest.set_node(pos, {name="air"})
 	end
-	
+
 	local positions7 = minetest.find_nodes_in_area(
 		{x=-50, y=-50, z=-50},
 		{x=50, y=50, z=50},
@@ -133,7 +145,7 @@ minetest.after(75, function(dtime)
 	for _, pos in ipairs(positions7) do
 		minetest.set_node(pos, {name="air"})
 	end
-	
+
 	local positions8 = minetest.find_nodes_in_area(
 		{x=-3, y=-3, z=-3},
 		{x=3, y=0, z=3},
@@ -141,16 +153,27 @@ minetest.after(75, function(dtime)
 	for _, pos in ipairs(positions8) do
 		minetest.set_node(pos, {name="air"})
 	end
-	
+
 	local positions9 = minetest.find_nodes_in_area(
 		{x=-2, y=1, z=-2},
 		{x=2, y=2, z=2},
-		{"default:tree"})
+		{"default:tree","default:cactus","default:jungletree"})
 	for _, pos in ipairs(positions9) do
 		minetest.set_node(pos, {name="air"})
 	end
-	
-			
+
+    local positions10 = minetest.find_nodes_in_area(
+		{x=-5, y=4, z=-5},
+		{x=5, y=8, z=5},
+		{"default:chest_locked","doors:door_steel"})
+	for _, pos in ipairs(positions10) do
+		minetest.remove_node(pos)
+	end
+
+    minetest.set_node({x=-2, y=1, z=-2}, {name="default:lava_source"})
+    minetest.set_node({x=-2, y=1, z=2}, {name="default:lava_source"})
+
+
 	for z1=-27, -16 do
 		minetest.set_node({x=37, y=2, z=z1}, {name="default:rail"})
         minetest.set_node({x=37, y=1, z=z1}, {name="default:stonebrick"})
@@ -193,43 +216,8 @@ minetest.after(75, function(dtime)
 		spawn_sanitizer.cleaned=true
 		minetest.log("action", "Spawn sanitized!")
 	end
+
+    spawn_sanitizer.clean_spawnpoint();
 end)
 
--- no more protection blocks at spawn!
-local old_node_place = minetest.item_place
-function minetest.item_place(itemstack, placer, pointed_thing)
-	if itemstack:get_definition().type == "node" then
-		local ok=true
-		if itemstack:get_name() == "protector_mese:protect" then
-			local pos = pointed_thing.above
-			if not placer or not placer.get_player_name then return false end
-			if pos.x>-21 and pos.x<21 and pos.z>-21 and pos.z<21 then
-				minetest.chat_send_player(placer:get_player_name(), "Spawn belongs to all")
-				if minetest.get_player_privs(placer:get_player_name()).delprotect then
-					ok=true
-				else
-					ok=false
-				end
-			end
-		end 
-		if ok == true then
-			return old_node_place(itemstack, placer, pointed_thing)
-		else
-			return
-		end	
-	end	
-	return old_node_place(itemstack, placer, pointed_thing)
-end
-
--- punish for lava at spawn, by TNT!
-local old_bucket_lava_on_place=minetest.registered_craftitems["bucket:bucket_lava"].on_place
-minetest.registered_craftitems["bucket:bucket_lava"].on_place=function(itemstack, placer, pointed_thing)
-	local pos = pointed_thing.above
-    if pos.x>-35 and pos.x<35 and pos.y>16 and pos.z>-35 and pos.z<35 then
-        minetest.log("action", "Player warned for placing lava!")
-        minetest.set_node({x=pos.x, y=pos.y-1, z=pos.z}, {name="tnt:tnt_burning"})
-        boom({x=pos.x, y=pos.y-1, z=pos.z}, math.random(1, 3))
-        minetest.sound_play("tnt_ignite", {pos=pos})
-    end
-	return old_bucket_lava_on_place(itemstack, placer, pointed_thing)
-end
+-- expects protection block mods to defend spawn by itself.
